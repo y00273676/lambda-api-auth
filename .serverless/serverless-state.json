@@ -1,0 +1,443 @@
+{
+  "service": {
+    "service": "aws-auth-test",
+    "serviceObject": {
+      "name": "aws-auth-test"
+    },
+    "provider": {
+      "stage": "beta",
+      "region": "cn-north-1",
+      "variableSyntax": "\\${([ ~:a-zA-Z0-9._@'\",\\-\\/\\(\\)]+?)}",
+      "name": "aws",
+      "runtime": "go1.x",
+      "logRetentionInDays": 14,
+      "endpointType": "REGIONAL",
+      "deploymentBucket": "my-aws-two",
+      "deploymentBucketObject": {
+        "name": "my-aws-two",
+        "serverSideEncryption": "AES256"
+      },
+      "versionFunctions": true,
+      "remoteFunctionData": null,
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "AuthAPILogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/auth-test-one",
+              "RetentionInDays": 14
+            }
+          },
+          "AuthProvideLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/auth-test-two",
+              "RetentionInDays": 14
+            }
+          },
+          "IamRoleLambdaExecution": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    },
+                    "Action": [
+                      "sts:AssumeRole"
+                    ]
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": {
+                    "Fn::Join": [
+                      "-",
+                      [
+                        "beta",
+                        "aws-auth-test",
+                        "lambda"
+                      ]
+                    ]
+                  },
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogStream"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/auth-test-one:*"
+                          },
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/auth-test-two:*"
+                          }
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/auth-test-one:*:*"
+                          },
+                          {
+                            "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/auth-test-two:*:*"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "Path": "/",
+              "RoleName": {
+                "Fn::Join": [
+                  "-",
+                  [
+                    "aws-auth-test",
+                    "beta",
+                    "us-east-2",
+                    "lambdaRole"
+                  ]
+                ]
+              }
+            }
+          },
+          "AuthAPILambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": "my-aws-two",
+                "S3Key": "serverless/aws-auth-test/beta/1561009030850-2019-06-20T05:37:10.850Z/aws-auth-test.zip"
+              },
+              "FunctionName": "auth-test-one",
+              "Handler": "/auth-test",
+              "MemorySize": 128,
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              },
+              "Runtime": "go1.x",
+              "Timeout": 30
+            },
+            "DependsOn": [
+              "AuthAPILogGroup",
+              "IamRoleLambdaExecution"
+            ]
+          },
+          "AuthAPILambdaVersion6INujIPj36uJbE7PzcxsBjVqa3C3oi6y7ftBekg": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "AuthAPILambdaFunction"
+              },
+              "CodeSha256": "wVYrQRtl31b2t0VdtL0mW15vLbj5cKgdcAkF898dYkY="
+            }
+          },
+          "AuthProvideLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": "my-aws-two",
+                "S3Key": "serverless/aws-auth-test/beta/1561009030850-2019-06-20T05:37:10.850Z/aws-auth-test.zip"
+              },
+              "FunctionName": "auth-test-two",
+              "Handler": "/auth-provider",
+              "MemorySize": 128,
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleLambdaExecution",
+                  "Arn"
+                ]
+              },
+              "Runtime": "go1.x",
+              "Timeout": 6
+            },
+            "DependsOn": [
+              "AuthProvideLogGroup",
+              "IamRoleLambdaExecution"
+            ]
+          },
+          "AuthProvideLambdaVersion8sNV8T8oWmOEsjPGMAYK95pmvqDH7M81QZClmjatYU": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "AuthProvideLambdaFunction"
+              },
+              "CodeSha256": "wVYrQRtl31b2t0VdtL0mW15vLbj5cKgdcAkF898dYkY="
+            }
+          },
+          "ApiGatewayRestApi": {
+            "Type": "AWS::ApiGateway::RestApi",
+            "Properties": {
+              "Name": "beta-aws-auth-test",
+              "EndpointConfiguration": {
+                "Types": [
+                  "REGIONAL"
+                ]
+              }
+            }
+          },
+          "ApiGatewayMethodAny": {
+            "Type": "AWS::ApiGateway::Method",
+            "Properties": {
+              "HttpMethod": "ANY",
+              "RequestParameters": {},
+              "ResourceId": {
+                "Fn::GetAtt": [
+                  "ApiGatewayRestApi",
+                  "RootResourceId"
+                ]
+              },
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "ApiKeyRequired": false,
+              "AuthorizationType": "CUSTOM",
+              "AuthorizerId": {
+                "Ref": "TwoApiGatewayAuthorizer"
+              },
+              "Integration": {
+                "IntegrationHttpMethod": "POST",
+                "Type": "AWS_PROXY",
+                "Uri": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":apigateway:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":lambda:path/2015-03-31/functions/",
+                      {
+                        "Fn::GetAtt": [
+                          "AuthAPILambdaFunction",
+                          "Arn"
+                        ]
+                      },
+                      "/invocations"
+                    ]
+                  ]
+                }
+              },
+              "MethodResponses": []
+            },
+            "DependsOn": "TwoApiGatewayAuthorizer"
+          },
+          "TwoApiGatewayAuthorizer": {
+            "Type": "AWS::ApiGateway::Authorizer",
+            "Properties": {
+              "AuthorizerResultTtlInSeconds": 0,
+              "IdentitySource": "method.request.header.Authorization",
+              "Name": "two",
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "AuthorizerUri": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":apigateway:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":lambda:path/2015-03-31/functions/",
+                    "arn:aws:lambda:us-east-2:615839329671:function:auth-test-two",
+                    "/invocations"
+                  ]
+                ]
+              },
+              "Type": "TOKEN"
+            }
+          },
+          "ApiGatewayDeployment1561009031054": {
+            "Type": "AWS::ApiGateway::Deployment",
+            "Properties": {
+              "RestApiId": {
+                "Ref": "ApiGatewayRestApi"
+              },
+              "StageName": "beta"
+            },
+            "DependsOn": [
+              "ApiGatewayMethodAny"
+            ]
+          },
+          "AuthAPILambdaPermissionApiGateway": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": {
+                "Fn::GetAtt": [
+                  "AuthAPILambdaFunction",
+                  "Arn"
+                ]
+              },
+              "Action": "lambda:InvokeFunction",
+              "Principal": "apigateway.amazonaws.com",
+              "SourceArn": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition"
+                    },
+                    ":execute-api:",
+                    {
+                      "Ref": "AWS::Region"
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId"
+                    },
+                    ":",
+                    {
+                      "Ref": "ApiGatewayRestApi"
+                    },
+                    "/*/*"
+                  ]
+                ]
+              }
+            }
+          },
+          "TwoLambdaPermissionApiGateway": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+              "FunctionName": "arn:aws:lambda:us-east-2:615839329671:function:auth-test-two",
+              "Action": "lambda:InvokeFunction",
+              "Principal": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "apigateway.",
+                    {
+                      "Ref": "AWS::URLSuffix"
+                    }
+                  ]
+                ]
+              }
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": "my-aws-two"
+          },
+          "AuthAPILambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "AuthAPILambdaVersion6INujIPj36uJbE7PzcxsBjVqa3C3oi6y7ftBekg"
+            }
+          },
+          "AuthProvideLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "AuthProvideLambdaVersion8sNV8T8oWmOEsjPGMAYK95pmvqDH7M81QZClmjatYU"
+            }
+          },
+          "ServiceEndpoint": {
+            "Description": "URL of the service endpoint",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  "https://",
+                  {
+                    "Ref": "ApiGatewayRestApi"
+                  },
+                  ".execute-api.us-east-2.",
+                  {
+                    "Ref": "AWS::URLSuffix"
+                  },
+                  "/beta"
+                ]
+              ]
+            }
+          }
+        }
+      },
+      "vpc": {}
+    },
+    "pluginsData": {},
+    "functions": {
+      "AuthAPI": {
+        "handler": "/auth-test",
+        "name": "auth-test-one",
+        "memorySize": 128,
+        "timeout": 30,
+        "events": [
+          {
+            "http": {
+              "path": "",
+              "method": "any",
+              "authorizer": {
+                "name": "two",
+                "arn": "arn:aws:lambda:us-east-2:615839329671:function:auth-test-two",
+                "resultTtlInSeconds": 0,
+                "identitySource": "method.request.header.Authorization",
+                "claims": []
+              },
+              "integration": "AWS_PROXY"
+            }
+          }
+        ],
+        "package": {},
+        "memory": 128,
+        "runtime": "go1.x",
+        "vpc": {}
+      },
+      "AuthProvide": {
+        "handler": "/auth-provider",
+        "name": "auth-test-two",
+        "memorySize": 128,
+        "events": [],
+        "package": {},
+        "memory": 128,
+        "timeout": 6,
+        "runtime": "go1.x",
+        "vpc": {}
+      }
+    },
+    "resources": {
+      "Resources": {
+        "AuthAPILambdaPermissionApiGateway": {
+          "Properties": {
+            "Principal": "apigateway.amazonaws.com"
+          }
+        }
+      },
+      "Outputs": {}
+    },
+    "layers": {},
+    "artifact": "/Users/yg/workcode/test/aws-apigateway-auth/.serverless/aws-auth-test.zip"
+  },
+  "package": {
+    "artifactDirectoryName": "serverless/aws-auth-test/beta/1561009030850-2019-06-20T05:37:10.850Z",
+    "artifact": "aws-auth-test.zip"
+  }
+}

@@ -1,0 +1,50 @@
+service: aws-auth-test
+
+frameworkVersion: ">=1.30.3"
+
+provider:
+  name: aws
+  runtime: go1.x
+  stage: ${opt:stage, 'beta'}
+  region: cn-north-1
+  logRetentionInDays: 14
+  endpointType: REGIONAL
+  deploymentBucket:
+    name: my-aws-two
+    serverSideEncryption: AES256
+
+resources:
+  Resources:
+    AuthAPILambdaPermissionApiGateway:
+      Properties:
+        Principal: apigateway.amazonaws.com
+
+package:
+  include:
+    - auth-test
+    - auth-provider
+  exclude:
+    - .idea
+    - .git
+    - test
+    - dump.rdb
+    - gin-bin
+  excludeDevDependencies: true
+
+functions:
+  AuthAPI:
+    handler: /auth-test
+    name: auth-test-one
+    memorySize: 128
+    timeout: 30
+    events:
+      - http:
+          path: /
+          method: any
+          authorizer:
+            arn: arn:aws:lambda:us-east-2:615839329671:function:auth-test-two
+            resultTtlInSeconds: 0
+  AuthProvide:
+    handler: /auth-provider
+    name: auth-test-two
+    memorySize: 128
